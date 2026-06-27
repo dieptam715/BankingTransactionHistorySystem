@@ -7,6 +7,7 @@ package datastructure;
 
 import java.util.Queue;
 import model.Transaction;
+import java.util.LinkedList;
 
 /**
  *
@@ -15,15 +16,26 @@ import model.Transaction;
 public class TransactionQueue {
     private Queue<Transaction> queue;
     
+    public TransactionQueue(){
+
+        queue = new LinkedList<>();
+
+    }
+
+    
     public void enqueue(Transaction t){
-        
-    };
+           queue.offer(t);
+    }
 
     public Transaction dequeue(){
-        return null;
-    };
+       if(queue.isEmpty()){
+
+            return null;
+        }
+        return queue.poll();
+    }
 
     public boolean isEmpty(){
-        return false;
-    };
+        return queue.isEmpty();
+    }
 }

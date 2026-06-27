@@ -6,21 +6,35 @@
 package datastructure;
 
 import model.Transaction;
+import java.util.Stack;
 
 /**
  *
  * @author Do Tuan Khai
  */
 public class TransactionStack {
+     private Stack<Transaction> stack;
+
+
+    public TransactionStack(){
+
+        stack = new Stack<>();
+
+    }
+
+
     public void push(Transaction t){
-        
-    };
+        stack.push(t);
+    }
 
     public Transaction pop(){
-        return null;
-    };
+       if(stack.isEmpty()){
+            return null;
+       } 
+       return stack.pop();
+    }
 
     public boolean isEmpty(){
-        return false;
-    };
+        return stack.isEmpty();
+    }
 }
