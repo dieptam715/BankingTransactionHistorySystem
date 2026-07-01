@@ -4,121 +4,159 @@ import model.Transaction;
 import model.TransactionNode;
 
 public class TransactionList {
-    private TransactionNode head;
-    private TransactionNode tail;
+    // Node nội bộ để quản lý liên kết
+    private class InternalNode {
+        TransactionNode dataNode;   // chứa Transaction
+        InternalNode next;
+        InternalNode prev;
 
-    // Thêm giao dịch vào cuối danh sách
-    public void addTransaction(Transaction t) {
-        TransactionNode newNode = new TransactionNode(t);
+        InternalNode(Transaction t) {
+            this.dataNode = new TransactionNode(t);
+        }
+    }
+
+    private InternalNode head;
+    private InternalNode tail;
+
+    // 1. Thêm giao dịch
+    public void addTransaction(Transaction t){
+        InternalNode newNode = new InternalNode(t);
         if (head == null) {
-            head = tail = newNode;
+            head = newNode;
+            tail = newNode;
         } else {
-            tail.setNext(newNode);
-            newNode.setPrev(tail);
+            tail.next = newNode;
+            newNode.prev = tail;
             tail = newNode;
         }
     }
 
-    // Xóa giao dịch theo id
-    public Transaction deleteTransaction(String id) {
-        TransactionNode current = head;
+    // 2. Xóa giao dịch theo ID
+    public Transaction deleteTransaction(String id){
+        InternalNode current = head;
         while (current != null) {
-            if (current.getData().getId().equals(id)) {
+            if (current.dataNode.data.getTransactionId().equals(id)) {
+                Transaction deleted = current.dataNode.data;
+
                 if (current == head) {
-                    head = head.getNext();
-                    if (head != null) head.setPrev(null);
+                    head = current.next;
+                    if (head != null) head.prev = null;
+                    else tail = null;
                 } else if (current == tail) {
-                    tail = tail.getPrev();
-                    if (tail != null) tail.setNext(null);
+                    tail = current.prev;
+                    tail.next = null;
                 } else {
-                    current.getPrev().setNext(current.getNext());
-                    current.getNext().setPrev(current.getPrev());
+                    current.prev.next = current.next;
+                    current.next.prev = current.prev;
                 }
-                return current.getData();
+                return deleted;
             }
-            current = current.getNext();
+            current = current.next;
         }
         return null;
     }
 
-    // Hiển thị lịch sử giao dịch
-    public void displayHistory() {
-        TransactionNode current = head;
-        while (current != null) {
-            System.out.println(current.getData());
-            current = current.getNext();
+    // 3. Hiển thị lịch sử
+    public void displayHistory(){
+        if (head == null) {
+            System.out.println("Transaction history is empty.");
+            return;
         }
+        InternalNode current = head;
+        System.out.println("\n--- Banking Transaction History ---");
+        while (current != null) {
+            current.dataNode.data.display();
+            current = current.next;
+        }
+        System.out.println("-----------------------------------");
     }
 
-    // Merge Sort theo số tiền
-    public void mergeSortByAmount() {
-        head = mergeSort(head, true);
-        resetTail();
+    // 4. Merge Sort theo Amount
+    public void mergeSortByAmount(){
+        head = mergeSortByAmount(head);
+        // cập nhật lại tail
+        InternalNode temp = head;
+        while (temp != null && temp.next != null) temp = temp.next;
+        tail = temp;
     }
 
-    // Merge Sort theo ngày
-    public void mergeSortByDate() {
-        head = mergeSort(head, false);
-        resetTail();
+    private InternalNode mergeSortByAmount(InternalNode h){
+        if (h == null || h.next == null) return h;
+
+        InternalNode middle = getMiddle(h);
+        InternalNode nextOfMiddle = middle.next;
+        middle.next = null;
+
+        InternalNode left = mergeSortByAmount(h);
+        InternalNode right = mergeSortByAmount(nextOfMiddle);
+
+        return sortedMergeByAmount(left, right);
     }
 
-    private TransactionNode mergeSort(TransactionNode node, boolean sortByAmount) {
-        if (node == null || node.getNext() == null) return node;
-
-        TransactionNode middle = getMiddle(node);
-        TransactionNode nextOfMiddle = middle.getNext();
-        middle.setNext(null);
-
-        TransactionNode left = mergeSort(node, sortByAmount);
-        TransactionNode right = mergeSort(nextOfMiddle, sortByAmount);
-
-        return sortedMerge(left, right, sortByAmount);
-    }
-
-    private TransactionNode sortedMerge(TransactionNode a, TransactionNode b, boolean sortByAmount) {
+    private InternalNode sortedMergeByAmount(InternalNode a, InternalNode b){
         if (a == null) return b;
         if (b == null) return a;
 
-        TransactionNode result;
-        if (sortByAmount) {
-            if (a.getData().getAmount() <= b.getData().getAmount()) {
-                result = a;
-                result.setNext(sortedMerge(a.getNext(), b, true));
-                if (result.getNext() != null) result.getNext().setPrev(result);
-            } else {
-                result = b;
-                result.setNext(sortedMerge(a, b.getNext(), true));
-                if (result.getNext() != null) result.getNext().setPrev(result);
-            }
+        InternalNode result;
+        if (a.dataNode.data.getAmount() <= b.dataNode.data.getAmount()) {
+            result = a;
+            result.next = sortedMergeByAmount(a.next, b);
+            if (result.next != null) result.next.prev = result;
         } else {
-            if (a.getData().getDate().compareTo(b.getData().getDate()) <= 0) {
-                result = a;
-                result.setNext(sortedMerge(a.getNext(), b, false));
-                if (result.getNext() != null) result.getNext().setPrev(result);
-            } else {
-                result = b;
-                result.setNext(sortedMerge(a, b.getNext(), false));
-                if (result.getNext() != null) result.getNext().setPrev(result);
-            }
+            result = b;
+            result.next = sortedMergeByAmount(a, b.next);
+            if (result.next != null) result.next.prev = result;
         }
         return result;
     }
 
-    private TransactionNode getMiddle(TransactionNode node) {
-        if (node == null) return node;
-        TransactionNode slow = node, fast = node;
-        while (fast.getNext() != null && fast.getNext().getNext() != null) {
-            slow = slow.getNext();
-            fast = fast.getNext().getNext();
-        }
-        return slow;
+    // 5. Merge Sort theo Date
+    public void mergeSortByDate(){
+        head = mergeSortByDate(head);
+        InternalNode temp = head;
+        while (temp != null && temp.next != null) temp = temp.next;
+        tail = temp;
     }
 
-    private void resetTail() {
-        TransactionNode current = head;
-        while (current != null && current.getNext() != null) {
-            current = current.getNext();
+    private InternalNode mergeSortByDate(InternalNode h){
+        if (h == null || h.next == null) return h;
+
+        InternalNode middle = getMiddle(h);
+        InternalNode nextOfMiddle = middle.next;
+        middle.next = null;
+
+        InternalNode left = mergeSortByDate(h);
+        InternalNode right = mergeSortByDate(nextOfMiddle);
+
+        return sortedMergeByDate(left, right);
+    }
+
+    private InternalNode sortedMergeByDate(InternalNode a, InternalNode b){
+        if (a == null) return b;
+        if (b == null) return a;
+
+        InternalNode result;
+        if (a.dataNode.data.getDate().isBefore(b.dataNode.data.getDate()) 
+            || a.dataNode.data.getDate().isEqual(b.dataNode.data.getDate())) {
+            result = a;
+            result.next = sortedMergeByDate(a.next, b);
+            if (result.next != null) result.next.prev = result;
+        } else {
+            result = b;
+            result.next = sortedMergeByDate(a, b.next);
+            if (result.next != null) result.next.prev = result;
         }
-        tail = current;
+        return result;
+    }
+
+    // Hàm hỗ trợ lấy middle node
+    private InternalNode getMiddle(InternalNode h){
+        if (h == null) return h;
+        InternalNode slow = h, fast = h.next;
+        while (fast != null && fast.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        return slow;
     }
 }
